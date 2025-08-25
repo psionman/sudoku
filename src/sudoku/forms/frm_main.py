@@ -114,27 +114,6 @@ class MainFrame():
 
         self.grid = Grid()
 
-        # Start test
-        # test = 1
-        # test_blocks = {
-        #     0: Block(
-        #         (Frame([1, 4]),
-        #          Frame([2, 8]),
-        #          Frame([3, 9]),
-        #          Frame([5, 7]),
-        #          Frame([6])),
-        #         ),
-        #     1: Block(
-        #         (Frame([2, 3, 5, 9]),
-        #          Frame([1, 6, 7]),
-        #          Frame([8]),
-        #          Frame([4])),
-        #         )
-        #         }
-        # if test:
-        #     self.grid.blocks = (test_blocks[0],)
-        # End test
-
         self._enable_buttons()
         self.left_to_right = True
         self.r2l_index, self.l2r_index = 0, 0
@@ -216,20 +195,23 @@ class MainFrame():
 
     def _get_next_cell_position(self, frame: Frame, cell_index: int) -> int:
         """Return the index of the next cell to be allocated."""
-        cells = len(frame.cells)
-
         if self.left_to_right:
-            # End of row → switch direction
-            if (self.l2r_index in (2, 5)
-                    and cells > 1 and cell_index >= cells - 2):
-                self.r2l_index = self.l2r_index + 3
-                self.left_to_right = False
-                return self.r2l_index
+            return self._left_to_right_assignment(frame, cell_index)
+        return self._right_to_left_assignment()
 
-            self.l2r_index += 1
-            return self.l2r_index
+    def _left_to_right_assignment(self, frame: Frame, cell_index: int) -> int:
+        # End of row → switch direction
+        cells = len(frame.cells)
+        if (self.l2r_index in (2, 5)
+                and cells > 1 and cell_index >= cells - 2):
+            self.r2l_index = self.l2r_index + 3
+            self.left_to_right = False
+            return self.r2l_index
 
-        # Right-to-left movement
+        self.l2r_index += 1
+        return self.l2r_index
+
+    def _right_to_left_assignment(self) -> int:
         self.l2r_index += 1
         self.r2l_index -= 1
 
