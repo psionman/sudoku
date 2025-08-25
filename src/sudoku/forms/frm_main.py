@@ -40,12 +40,11 @@ class MainFrame():
         self.canvases = {}
         self.r2l_index, self.l2r_index = 0, 0
         self.left_to_right = True
+        self.buttons = {}
 
         # tk variables
-        self.xxx = tk.StringVar()
 
         # Trace
-        self.xxx.trace_add('write', self._value_changed)
 
         self._show()
         self._create_grid()
@@ -96,7 +95,8 @@ class MainFrame():
         for number in range(9):
             button = ttk.Button(frame, text=number+1)
             row, column = number // 3, number % 3
-            button.grid(row=row, column=column)
+            button.grid(row=row, column=column, ipady=20, padx=2, pady=2)
+            self.buttons[number] = button
         return frame
 
     def _button_frame(self, master: tk.Frame) -> tk.Frame:
@@ -107,22 +107,6 @@ class MainFrame():
         ]
         frame.enable(False)
         return frame
-
-    def _value_changed(self) -> bool:
-        """
-        Determine whether any configuration value has changed.
-        """
-        # pylint: disable=no-member)
-        return (
-            self.xxx.get() != self.config.xxx
-        )
-
-    def _enable_buttons(self, *args) -> None:
-        """
-        Enable or disable form buttons based on changes in configuration.
-        """
-        enable = bool(self._value_changed())
-        self.button_frame.enable(enable)
 
     def _create_grid(self, *args) -> None:
         for widget in self.main_frame.winfo_children():
@@ -151,6 +135,7 @@ class MainFrame():
         #     self.grid.blocks = (test_blocks[0],)
         # End test
 
+        self._enable_buttons()
         self.left_to_right = True
         self.r2l_index, self.l2r_index = 0, 0
         for index, block in enumerate(self.grid.blocks):
@@ -161,13 +146,12 @@ class MainFrame():
                              sticky=tk.NSEW, padx=PAD, pady=PAD)
 
     def _block_frame(self, block: Block) -> ttk.Frame:
-        print('-'*50)
         tk_frame = ttk.Frame(self.main_frame)
-        for i in range(3):
-            tk_frame.rowconfigure(i, weight=1, uniform="cell")
-            tk_frame.columnconfigure(i, weight=1, uniform="cell")
+        for item in range(3):
+            tk_frame.rowconfigure(item, weight=1, uniform="cell")
+            tk_frame.columnconfigure(item, weight=1, uniform="cell")
 
-        available_colours = [colour for colour in COLOURS]
+        available_colours = list(COLOURS)
 
         size = min(self.main_frame.winfo_width(),
                    self.main_frame.winfo_height()) // 3
@@ -179,41 +163,56 @@ class MainFrame():
         for frame in block.frames:
             colours = random.choice(available_colours)
             available_colours.remove(colours)
-            suggestions = frame.suggestions
 
             for cell_index in range(len(frame.cells)):
-                canvas = canvases[index]
-                canvas.value = frame
-                canvas.colours = colours
-                canvas['bg'] = canvas.background
+                canvas = self._setup_cell_canvas(
+                    canvases[index], frame, colours)
 
                 if cell_index == 0:
-                    inner = tk.Canvas(
-                        canvas, width=TOTAL_WIDTH, height=TOTAL_HEIGHT,
-                        bg=canvas.selected, borderwidth=0,
-                        highlightthickness=0)
-                    canvas.create_window(
-                        TOTAL_LEFT, TOTAL_TOP, window=inner, anchor=tk.NW)
-                    canvas.inner = inner.create_text(
-                        TOTAL_TEXT_LEFT, TOTAL_TEXT_TOP, text=frame.total,
-                        font=TOTAL_FONT, fill="black")
+                    self._create_total_text(canvas, frame.total)
 
-                if suggestions[cell_index]:
-                    inner = tk.Canvas(
-                        canvas,
-                        width=SUGGESTION_WIDTH, height=SUGGESTION_HEIGHT,
-                        bg=canvas.background, borderwidth=0,
-                        highlightthickness=0)
-                    canvas.create_window(
-                        SUGGESTION_LEFT, SUGGESTION_TOP,
-                        window=inner, anchor=tk.NW)
-                    canvas.inner = inner.create_text(
-                        SUGGESTION_TEXT_LEFT, SUGGESTION_TEXT_TOP,
-                        text=suggestions[cell_index],
-                        font=SUGGESTION_FONT, fill="black")
+                if frame.suggestions[cell_index]:
+                    suggestion = frame.suggestions[cell_index]
+                    self._create_suggestion_canvas(canvas, suggestion)
+                    self.buttons[suggestion - 1].state(["disabled"])
 
                 index = self._get_next_cell_position(frame, cell_index)
         return tk_frame
+
+    def _setup_cell_canvas(
+            self,
+            canvas: tk.Canvas,
+            frame: Frame,
+            colours: tuple) -> tk.Canvas:
+        canvas.value = frame
+        canvas.colours = colours
+        canvas['bg'] = canvas.background
+        return canvas
+
+    def _create_total_text(self, canvas: tk.Canvas, total: int):
+        inner = tk.Canvas(
+            canvas, width=TOTAL_WIDTH, height=TOTAL_HEIGHT,
+            bg=canvas.selected, borderwidth=0,
+            highlightthickness=0)
+        canvas.create_window(
+            TOTAL_LEFT, TOTAL_TOP, window=inner, anchor=tk.NW)
+        canvas.inner = inner.create_text(
+            TOTAL_TEXT_LEFT, TOTAL_TEXT_TOP, text=total,
+            font=TOTAL_FONT, fill="black")
+
+    def _create_suggestion_canvas(self, canvas: tk.Canvas, suggestion: int):
+        inner = tk.Canvas(
+            canvas,
+            width=SUGGESTION_WIDTH, height=SUGGESTION_HEIGHT,
+            bg=canvas.background, borderwidth=0,
+            highlightthickness=0)
+        canvas.create_window(
+            SUGGESTION_LEFT, SUGGESTION_TOP,
+            window=inner, anchor=tk.NW)
+        canvas.inner = inner.create_text(
+            SUGGESTION_TEXT_LEFT, SUGGESTION_TEXT_TOP,
+            text=suggestion,
+            font=SUGGESTION_FONT, fill="black")
 
     def _get_next_cell_position(self, frame: Frame, cell_index: int) -> int:
         """Return the index of the next cell to be allocated."""
@@ -265,8 +264,16 @@ class MainFrame():
             background='#fff',
             highlightthickness=2,
             width=size,
-            height=size)
+            height=size
+        )
         cell.bind('<Button-1>', self._cell_selected)
+
+        # Force the canvas to remain square
+        def resize(event, canvas=cell):
+            side = min(event.width, event.height)
+            canvas.config(width=side, height=side)
+
+        cell.bind("<Configure>", resize)
         return cell
 
     def _cell_selected(self, event) -> None:
@@ -277,6 +284,14 @@ class MainFrame():
 
     def _create_root(self, *args) -> None:
         self.main_frame.height = self.main_frame.winfo_width()
+
+    def _enable_buttons(self) -> None:
+        for index in range(9):
+            self.buttons[index].state(['!disabled'])
+
+    def _disable_buttons(self, all: bool = False) -> None:
+        for index in range(9):
+            self.buttons[index].state(['!disabled'])
 
     def _dismiss(self, *args) -> None:
         self.root.destroy()
