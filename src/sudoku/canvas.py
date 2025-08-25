@@ -23,8 +23,7 @@ class Canvas(tk.Canvas):
         self._colours = (self.background, self.selected)
         self.frame: Frame = None
         self.inner: tk.Canvas = None
-        # self. borderwidth = 0
-        # self.highlightthickness = 0
+        self.suggestion: int = 0
 
     @property
     def colours(self):

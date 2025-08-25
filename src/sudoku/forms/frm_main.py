@@ -118,27 +118,29 @@ class MainFrame():
         self.left_to_right = True
         self.r2l_index, self.l2r_index = 0, 0
         for index, block in enumerate(self.grid.blocks):
-            block_frame = self._block_frame(block)
+            block_frame = self._create_block(block)
 
             row, column = index // 3, index % 3
             block_frame.grid(row=row, column=column,
                              sticky=tk.NSEW, padx=PAD, pady=PAD)
 
-    def _block_frame(self, block: Block) -> ttk.Frame:
+    def _create_block(self, block: Block) -> ttk.Frame:
         tk_frame = ttk.Frame(self.main_frame)
         for item in range(3):
             tk_frame.rowconfigure(item, weight=1, uniform="cell")
             tk_frame.columnconfigure(item, weight=1, uniform="cell")
-
-        available_colours = list(COLOURS)
-
         size = min(self.main_frame.winfo_width(),
                    self.main_frame.winfo_height()) // 3
 
         self.canvases = self._create_canvases(tk_frame, size)
-        canvases = dict(enumerate(self.canvases.values()))
 
+        self._create_frames(block)
+        return tk_frame
+
+    def _create_frames(self, block: Block) -> None:
+        canvases = dict(enumerate(self.canvases.values()))
         index = 0
+        available_colours = list(COLOURS)
         for frame in block.frames:
             colours = random.choice(available_colours)
             available_colours.remove(colours)
@@ -156,7 +158,6 @@ class MainFrame():
                     self.buttons[suggestion - 1].state(["disabled"])
 
                 index = self._get_next_cell_position(frame, cell_index)
-        return tk_frame
 
     def _setup_cell_canvas(
             self,
@@ -192,6 +193,7 @@ class MainFrame():
             SUGGESTION_TEXT_LEFT, SUGGESTION_TEXT_TOP,
             text=suggestion,
             font=SUGGESTION_FONT, fill="black")
+        canvas.suggestion = suggestion
 
     def _get_next_cell_position(self, frame: Frame, cell_index: int) -> int:
         """Return the index of the next cell to be allocated."""
@@ -200,10 +202,10 @@ class MainFrame():
         return self._right_to_left_assignment()
 
     def _left_to_right_assignment(self, frame: Frame, cell_index: int) -> int:
-        # End of row → switch direction
         cells = len(frame.cells)
         if (self.l2r_index in (2, 5)
                 and cells > 1 and cell_index >= cells - 2):
+            # End of row → switch direction
             self.r2l_index = self.l2r_index + 3
             self.left_to_right = False
             return self.r2l_index
@@ -259,9 +261,12 @@ class MainFrame():
         return cell
 
     def _cell_selected(self, event) -> None:
+        # if suggestion ...
         for canvas in self.canvases.values():
             canvas['bg'] = canvas.background
         canvas = self.canvases[event.widget.id]
+        if canvas.suggestion:
+            return
         canvas['bg'] = canvas.selected
 
     def _create_root(self, *args) -> None:
