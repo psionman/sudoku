@@ -1,7 +1,7 @@
 
 """MainFrame for Sudoku."""
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from pathlib import Path
 import random
 
@@ -41,6 +41,8 @@ class MainFrame():
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.config = read_config()
+
+        self.block = None
         self.canvases = {}
         self.r2l_index, self.l2r_index = 0, 0
         self.left_to_right = True
@@ -109,7 +111,7 @@ class MainFrame():
         frame = ButtonFrame(master, tk.HORIZONTAL)
         frame.buttons = [
             frame.icon_button('new', False, self._create_grid),
-            frame.icon_button('redo', False, self._clear_grid),
+            frame.icon_button('clear', False, self._clear_grid),
             frame.icon_button('check', False, self._check_grid),
             frame.icon_button('close', False, self._dismiss),
         ]
@@ -126,6 +128,8 @@ class MainFrame():
         self.left_to_right = True
         self.r2l_index, self.l2r_index = 0, 0
         for index, block in enumerate(self.grid.blocks):
+            # TODO this assumes one block per grid!!!
+            self.block = block
             block_frame = self._create_block(block)
 
             row, column = index // 3, index % 3
@@ -149,7 +153,7 @@ class MainFrame():
         canvases = dict(enumerate(self.canvases.values()))
         index = 0
         available_colours = list(COLOURS)
-        for frame in block.frames:
+        for frame in block.frames.values():
             colours = random.choice(available_colours)
             available_colours.remove(colours)
 
@@ -157,6 +161,7 @@ class MainFrame():
                 canvas = self._setup_cell_canvas(
                     canvases[index], frame, colours)
                 canvas.frame = frame
+                frame.canvases.append(canvas)
 
                 if cell_index == 0:
                     self._create_total_text(canvas, frame.total)
@@ -278,6 +283,8 @@ class MainFrame():
         if canvas.suggestion:
             return
         canvas['bg'] = canvas.selected
+        if hasattr(canvas, "inner_canvas"):
+            canvas.inner_canvas['bg'] = canvas.selected
         self.selected_cell = canvas
 
     def _create_root(self, *args) -> None:
@@ -297,6 +304,7 @@ class MainFrame():
             return
         if self.selected_cell:
             self._create_solution_canvas(button['text'])
+            self._check_complete()
 
     def _create_solution_canvas(self, solution: int):
         self.selected_cell.solution = solution
@@ -328,9 +336,41 @@ class MainFrame():
             self._create_solution_canvas(0)
         self.selected_cell = None
 
+    def _check_complete(self, *args) -> None:
+        (correct, complete) = self._correct_complete()
+        if complete:
+            self._display_check(correct, complete)
+
     def _check_grid(self, *args) -> None:
-        for canvas in self.canvases.values():
-            print(f'{canvas.frame.uuid=}')
+        (correct, complete) = self._correct_complete()
+        self._display_check(correct, complete)
+
+    def _display_check(self, correct: bool, complete: bool, *args) -> None:
+        if correct:
+            message = 'Correct - Well done!'
+            if not complete:
+                message = 'Correct but not finished'
+            messagebox.showinfo('', message)
+        else:
+            messagebox.showerror('', 'Wrong')
+
+    def _correct_complete(self) -> tuple:
+        correct = True
+        complete = True
+        for frame in self.block.frames.values():
+            cells = []
+            for canvas in frame.canvases:
+                if canvas.solution:
+                    cells.append(canvas.solution)
+                if canvas.suggestion:
+                    cells.append(canvas.suggestion)
+            if (cells and
+                    not all(v in frame.cells for v in cells)
+                    or len(set(cells)) != len(cells)):
+                correct = False
+            if len(cells) != len(frame.cells):
+                complete = False
+        return (correct, complete)
 
     def _dismiss(self, *args) -> None:
         self.root.destroy()

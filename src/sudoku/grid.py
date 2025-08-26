@@ -22,6 +22,7 @@ class Frame:
         self._cells: list = cells
         self.suggestions: dict = {}
         self.uuid = uuid.uuid1()
+        self.canvases = []
 
     def __repr__(self) -> str:
         return (f"Frame({self.total} "
@@ -41,7 +42,7 @@ class Frame:
 
 class Block:
     """A sudoku block."""
-    def __init__(self, frames: tuple = ()) -> None:
+    def __init__(self, frames: dict = ()) -> None:
         self.frames = frames
 
     def __repr__(self) -> str:
@@ -73,20 +74,21 @@ class Grid:
         elements = random.choice([2, 3, 4, 5])
         frame_set = random.choice(FRAMES[elements])
         numbers = list(range(1, 10))
-        frames = []
+        frames = {}
         for cells in frame_set:
-            frame = []
+            frame_cells = []
             for _ in range(cells):
                 number = random.choice(numbers)
-                frame.append(number)
+                frame_cells.append(number)
                 numbers.remove(number)
-            frames.append(Frame(tuple(frame)))
-        block = Block(tuple(frames))
+            frame = Frame(tuple(frame_cells))
+            frames[frame.uuid] = frame
+        block = Block(frames)
         return block
 
     def _build_block(self, block: Block):
         numbers = list(range(1, 10))
-        for frame in block.frames:
+        for frame in block.frames.values():
             frame.suggestions = self._get_suggestion(frame, numbers)
             for cell in frame.cells:
                 if cell in numbers:
