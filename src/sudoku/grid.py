@@ -2,6 +2,7 @@
 import random
 import itertools
 from itertools import combinations
+import uuid
 
 from psiutils.utilities import logger
 from sudoku.config import read_config
@@ -20,6 +21,7 @@ class Frame:
     def __init__(self, cells: tuple) -> None:
         self._cells: list = cells
         self.suggestions: dict = {}
+        self.uuid = uuid.uuid1()
 
     def __repr__(self) -> str:
         return (f"Frame({self.total} "

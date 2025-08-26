@@ -156,6 +156,7 @@ class MainFrame():
             for cell_index in range(len(frame.cells)):
                 canvas = self._setup_cell_canvas(
                     canvases[index], frame, colours)
+                canvas.frame = frame
 
                 if cell_index == 0:
                     self._create_total_text(canvas, frame.total)
@@ -271,6 +272,8 @@ class MainFrame():
         # if suggestion ...
         for canvas in self.canvases.values():
             canvas['bg'] = canvas.background
+            if hasattr(canvas, "inner_canvas"):
+                canvas.inner_canvas['bg'] = canvas.background
         canvas = self.canvases[event.widget.id]
         if canvas.suggestion:
             return
@@ -305,7 +308,7 @@ class MainFrame():
         inner = tk.Canvas(
             self.selected_cell,
             width=SOLUTION_WIDTH, height=SOLUTION_HEIGHT,
-            bg=self.selected_cell.background, borderwidth=0,
+            bg=self.selected_cell.selected, borderwidth=0,
             highlightthickness=0)
         self.selected_cell.create_window(
             SOLUTION_LEFT, SOLUTION_TOP,
@@ -323,9 +326,11 @@ class MainFrame():
             self.selected_cell = canvas
             self.selected_cell.solution = 0
             self._create_solution_canvas(0)
+        self.selected_cell = None
 
     def _check_grid(self, *args) -> None:
-        ...
+        for canvas in self.canvases.values():
+            print(f'{canvas.frame.uuid=}')
 
     def _dismiss(self, *args) -> None:
         self.root.destroy()

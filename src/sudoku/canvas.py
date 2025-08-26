@@ -15,6 +15,7 @@ COLOURS = [
 
 
 class Canvas(tk.Canvas):
+    """Enhanced canvas class."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.background = '#fff'
@@ -28,10 +29,12 @@ class Canvas(tk.Canvas):
 
     @property
     def colours(self):
+        """Return the canvas colours."""
         return self._colours
 
     @colours.setter
     def colours(self, value: tuple) -> None:
+        """Set the canvas colours."""
         self.background = value[0]
         self.selected = value[1]
         self._colours = (self.background, self.selected)
