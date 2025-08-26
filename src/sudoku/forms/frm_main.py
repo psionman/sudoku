@@ -13,7 +13,6 @@ from sudoku.constants import APP_TITLE
 from sudoku.config import read_config
 
 from sudoku.main_menu import MainMenu
-# from sudoku.forms.frmModal import ModalFrame
 
 from sudoku.grid import Grid, Block, Frame
 from sudoku.canvas import Canvas, COLOURS
@@ -110,6 +109,8 @@ class MainFrame():
         frame = ButtonFrame(master, tk.HORIZONTAL)
         frame.buttons = [
             frame.icon_button('new', False, self._create_grid),
+            frame.icon_button('redo', False, self._clear_grid),
+            frame.icon_button('check', False, self._check_grid),
             frame.icon_button('close', False, self._dismiss),
         ]
         frame.enable(False)
@@ -162,7 +163,6 @@ class MainFrame():
                 if frame.suggestions[cell_index]:
                     suggestion = frame.suggestions[cell_index]
                     self._create_suggestion_canvas(canvas, suggestion)
-                    # self.buttons[suggestion - 1].state(["disabled"])
 
                 index = self._get_next_cell_position(frame, cell_index)
 
@@ -296,6 +296,12 @@ class MainFrame():
             self._create_solution_canvas(button['text'])
 
     def _create_solution_canvas(self, solution: int):
+        self.selected_cell.solution = solution
+        if solution == 0:
+            if hasattr(self.selected_cell, "inner_canvas"):
+                self.selected_cell.inner_canvas.destroy()
+                del self.selected_cell.inner_canvas
+            return
         inner = tk.Canvas(
             self.selected_cell,
             width=SOLUTION_WIDTH, height=SOLUTION_HEIGHT,
@@ -304,10 +310,22 @@ class MainFrame():
         self.selected_cell.create_window(
             SOLUTION_LEFT, SOLUTION_TOP,
             window=inner, anchor=tk.NW)
+        self.selected_cell.inner_canvas = inner
         self.selected_cell.inner = inner.create_text(
             SOLUTION_TEXT_LEFT, SOLUTION_TEXT_TOP,
             text=solution,
             font=SOLUTION_FONT, fill="black")
+
+    def _clear_grid(self, *args) -> None:
+        for canvas in self.canvases.values():
+            if canvas.suggestion:
+                continue
+            self.selected_cell = canvas
+            self.selected_cell.solution = 0
+            self._create_solution_canvas(0)
+
+    def _check_grid(self, *args) -> None:
+        ...
 
     def _dismiss(self, *args) -> None:
         self.root.destroy()

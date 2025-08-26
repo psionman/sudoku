@@ -24,6 +24,7 @@ class Canvas(tk.Canvas):
         self.frame: Frame = None
         self.inner: tk.Canvas = None
         self.suggestion: int = 0
+        self.solution: int = 0
 
     @property
     def colours(self):
