@@ -31,6 +31,11 @@ SUGGESTION_WIDTH, SUGGESTION_HEIGHT = 50, 50
 SUGGESTION_TEXT_LEFT, SUGGESTION_TEXT_TOP = 25, 25
 SUGGESTION_FONT = ("Arial", 36)
 
+SOLUTION_LEFT, SOLUTION_TOP = 75, 45
+SOLUTION_WIDTH, SOLUTION_HEIGHT = 50, 50
+SOLUTION_TEXT_LEFT, SOLUTION_TEXT_TOP = 25, 25
+SOLUTION_FONT = ("Arial", 36)
+
 
 class MainFrame():
     """Create MainFrame for Sudoku application."""
@@ -41,6 +46,7 @@ class MainFrame():
         self.r2l_index, self.l2r_index = 0, 0
         self.left_to_right = True
         self.buttons = {}
+        self.selected_cell = None
 
         # tk variables
 
@@ -94,6 +100,7 @@ class MainFrame():
         frame = ttk.Frame(master)
         for number in range(9):
             button = ttk.Button(frame, text=number+1)
+            button.bind("<Button-1>", self._button_click)
             row, column = number // 3, number % 3
             button.grid(row=row, column=column, ipady=20, padx=2, pady=2)
             self.buttons[number] = button
@@ -114,7 +121,7 @@ class MainFrame():
 
         self.grid = Grid()
 
-        self._enable_buttons()
+        # self._enable_buttons()
         self.left_to_right = True
         self.r2l_index, self.l2r_index = 0, 0
         for index, block in enumerate(self.grid.blocks):
@@ -155,7 +162,7 @@ class MainFrame():
                 if frame.suggestions[cell_index]:
                     suggestion = frame.suggestions[cell_index]
                     self._create_suggestion_canvas(canvas, suggestion)
-                    self.buttons[suggestion - 1].state(["disabled"])
+                    # self.buttons[suggestion - 1].state(["disabled"])
 
                 index = self._get_next_cell_position(frame, cell_index)
 
@@ -192,7 +199,7 @@ class MainFrame():
         canvas.inner = inner.create_text(
             SUGGESTION_TEXT_LEFT, SUGGESTION_TEXT_TOP,
             text=suggestion,
-            font=SUGGESTION_FONT, fill="black")
+            font=SUGGESTION_FONT, fill="grey")
         canvas.suggestion = suggestion
 
     def _get_next_cell_position(self, frame: Frame, cell_index: int) -> int:
@@ -268,17 +275,39 @@ class MainFrame():
         if canvas.suggestion:
             return
         canvas['bg'] = canvas.selected
+        self.selected_cell = canvas
 
     def _create_root(self, *args) -> None:
         self.main_frame.height = self.main_frame.winfo_width()
 
-    def _enable_buttons(self) -> None:
-        for index in range(9):
-            self.buttons[index].state(['!disabled'])
+    # def _enable_buttons(self) -> None:
+    #     for index in range(9):
+    #         self.buttons[index].state(['!disabled'])
 
-    def _disable_buttons(self, all: bool = False) -> None:
-        for index in range(9):
-            self.buttons[index].state(['!disabled'])
+    # def _disable_buttons(self, all: bool = False) -> None:
+    #     for index in range(9):
+    #         self.buttons[index].state(['!disabled'])
+
+    def _button_click(self, event) -> None:
+        button = event.widget
+        if "disabled" in button.state():
+            return
+        if self.selected_cell:
+            self._create_solution_canvas(button['text'])
+
+    def _create_solution_canvas(self, solution: int):
+        inner = tk.Canvas(
+            self.selected_cell,
+            width=SOLUTION_WIDTH, height=SOLUTION_HEIGHT,
+            bg=self.selected_cell.background, borderwidth=0,
+            highlightthickness=0)
+        self.selected_cell.create_window(
+            SOLUTION_LEFT, SOLUTION_TOP,
+            window=inner, anchor=tk.NW)
+        self.selected_cell.inner = inner.create_text(
+            SOLUTION_TEXT_LEFT, SOLUTION_TEXT_TOP,
+            text=solution,
+            font=SOLUTION_FONT, fill="black")
 
     def _dismiss(self, *args) -> None:
         self.root.destroy()
