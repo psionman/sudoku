@@ -1,5 +1,7 @@
 
 """MainFrame for Sudoku."""
+
+import contextlib
 import tkinter as tk
 from tkinter import ttk, messagebox
 from pathlib import Path
@@ -124,7 +126,6 @@ class MainFrame():
 
         self.grid = Grid()
 
-        # self._enable_buttons()
         self.left_to_right = True
         self.r2l_index, self.l2r_index = 0, 0
         for index, block in enumerate(self.grid.blocks):
@@ -275,10 +276,8 @@ class MainFrame():
 
     def _cell_selected(self, event) -> None:
         # if suggestion ...
-        for canvas in self.canvases.values():
-            canvas['bg'] = canvas.background
-            if hasattr(canvas, "inner_canvas"):
-                canvas.inner_canvas['bg'] = canvas.background
+        self._reset_backgrounds()
+
         canvas = self.canvases[event.widget.id]
         if canvas.suggestion:
             return
@@ -286,6 +285,12 @@ class MainFrame():
         if hasattr(canvas, "inner_canvas"):
             canvas.inner_canvas['bg'] = canvas.selected
         self.selected_cell = canvas
+
+    def _reset_backgrounds(self) -> None:
+        for canvas in self.canvases.values():
+            canvas['bg'] = canvas.background
+            if hasattr(canvas, "inner_canvas"):
+                canvas.inner_canvas['bg'] = canvas.background
 
     def _create_root(self, *args) -> None:
         self.main_frame.height = self.main_frame.winfo_width()
@@ -313,6 +318,10 @@ class MainFrame():
                 self.selected_cell.inner_canvas.destroy()
                 del self.selected_cell.inner_canvas
             return
+
+        with contextlib.suppress(AttributeError):
+            self.selected_cell.inner_canvas.destroy()
+
         inner = tk.Canvas(
             self.selected_cell,
             width=SOLUTION_WIDTH, height=SOLUTION_HEIGHT,
@@ -328,13 +337,14 @@ class MainFrame():
             font=SOLUTION_FONT, fill="black")
 
     def _clear_grid(self, *args) -> None:
+        self._reset_backgrounds()
         for canvas in self.canvases.values():
             if canvas.suggestion:
                 continue
             self.selected_cell = canvas
             self.selected_cell.solution = 0
             self._create_solution_canvas(0)
-        self.selected_cell = None
+        # self.selected_cell = None
 
     def _check_complete(self, *args) -> None:
         (correct, complete) = self._correct_complete()
@@ -373,4 +383,7 @@ class MainFrame():
         return (correct, complete)
 
     def _dismiss(self, *args) -> None:
+        dlg = messagebox.askokcancel('', "OK to quit")
+        if not dlg:
+            return
         self.root.destroy()
