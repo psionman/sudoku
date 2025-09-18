@@ -4,7 +4,7 @@ import itertools
 from itertools import combinations
 import uuid
 
-from psiutils.utilities import logger
+from sudoku import logger
 from sudoku.config import read_config
 
 FRAMES = {

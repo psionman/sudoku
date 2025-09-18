@@ -59,8 +59,8 @@ class xxxFrame():
     def _button_frame(self, master: tk.Frame) -> tk.Frame:
         frame = ButtonFrame(master, tk.HORIZONTAL)
         frame.buttons = [
-            frame.icon_button('build', True, self._process),
-            frame.icon_button('exit', False, self._dismiss),
+            frame.icon_button('build', self._process, True),
+            frame.icon_button('exit', self._dismiss),
         ]
         frame.enable(False)
         return frame

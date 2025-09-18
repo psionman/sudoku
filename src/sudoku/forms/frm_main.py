@@ -112,10 +112,10 @@ class MainFrame():
     def _button_frame(self, master: tk.Frame) -> tk.Frame:
         frame = ButtonFrame(master, tk.HORIZONTAL)
         frame.buttons = [
-            frame.icon_button('new', False, self._create_grid),
-            frame.icon_button('clear', False, self._clear_grid),
-            frame.icon_button('check', False, self._check_grid),
-            frame.icon_button('close', False, self._dismiss),
+            frame.icon_button('new', self._create_grid),
+            frame.icon_button('clear', self._clear_grid),
+            frame.icon_button('check', self._check_grid),
+            frame.icon_button('close', self._dismiss),
         ]
         frame.enable(False)
         return frame
